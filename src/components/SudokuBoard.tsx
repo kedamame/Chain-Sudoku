@@ -38,11 +38,14 @@ export default function SudokuBoard({ puzzle, board, selected, mistakes, onSelec
             const borderRight = (c + 1) % 3 === 0 && c !== 8 ? 'border-r-2 border-r-black' : 'border-r border-r-gray-300';
             const borderBottom = (r + 1) % 3 === 0 && r !== 8 ? 'border-b-2 border-b-black' : 'border-b border-b-gray-300';
 
+            const isUserFilled = !isGiven && val !== null;
+
             let bg = 'bg-white';
             if (isSelected) bg = 'bg-black';
             else if (isWrong) bg = 'bg-red-100';
             else if (isSameNum) bg = 'bg-gray-300';
-            else if (isRelated) bg = 'bg-gray-100';
+            else if (isRelated) bg = isUserFilled ? 'bg-blue-100' : 'bg-gray-100';
+            else if (isUserFilled) bg = 'bg-blue-50';
 
             let textColor = 'text-black';
             if (isSelected) textColor = 'text-white';
