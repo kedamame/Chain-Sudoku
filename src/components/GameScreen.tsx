@@ -88,7 +88,7 @@ export default function GameScreen() {
     mode === 'daily' ? 'medium' : randomDifficulty,
   );
 
-  // Handle win — update localStorage and trigger on-chain save
+  // Handle win — update localStorage only (on-chain is manual button)
   useEffect(() => {
     if (game.status === 'won' && !clearedThisRound) {
       setClearedThisRound(true);
@@ -97,15 +97,13 @@ export default function GameScreen() {
         const n = incrementDailyClears();
         setLocalDailyClears(n);
         setDailyCompleted(true);
-        if (isConnected && onChain.isContractDeployed) onChain.increment('daily');
       } else if (mode === 'random') {
         const n = incrementRandomClears();
         setLocalRandomClears(n);
-        if (isConnected && onChain.isContractDeployed) onChain.increment('random');
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game.status, clearedThisRound, mode, isConnected]);
+  }, [game.status, clearedThisRound, mode]);
 
   // Mark saved after tx confirmed
   useEffect(() => {
@@ -317,21 +315,41 @@ export default function GameScreen() {
                 </div>
               </div>
 
-              {/* On-chain tx status */}
-              {isConnected && onChain.isContractDeployed && txStatus && (
-                <div className="border border-gray-200 px-4 py-2">
-                  <p className="text-[10px] tracking-widest uppercase text-gray-400">{txStatus}</p>
-                  {onChain.txHash && savedOnChain && (
-                    <a
-                      href={`https://basescan.org/tx/${onChain.txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[10px] underline text-gray-500"
+              {/* Save to blockchain button */}
+              {onChain.isContractDeployed && (
+                <>
+                  {!isConnected && (
+                    <button
+                      onClick={() => connect({ connector: connectors[0] })}
+                      className="w-full py-3 border-2 border-black text-sm font-bold tracking-widest uppercase hover:bg-black hover:text-white transition-colors"
                     >
-                      View on Basescan
-                    </a>
+                      Connect to Save on Base
+                    </button>
                   )}
-                </div>
+                  {isConnected && !savedOnChain && !onChain.isSending && !onChain.isConfirming && (
+                    <button
+                      onClick={() => onChain.increment(mode === 'daily' ? 'daily' : 'random')}
+                      className="w-full py-3 border-2 border-black text-sm font-bold tracking-widest uppercase hover:bg-black hover:text-white transition-colors"
+                    >
+                      Save to Blockchain
+                    </button>
+                  )}
+                  {isConnected && (onChain.isSending || onChain.isConfirming || savedOnChain) && (
+                    <div className="border border-gray-200 px-4 py-2 flex items-center justify-between">
+                      <p className="text-[10px] tracking-widest uppercase text-gray-400">{txStatus}</p>
+                      {onChain.txHash && savedOnChain && (
+                        <a
+                          href={`https://basescan.org/tx/${onChain.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] underline text-gray-500"
+                        >
+                          Basescan
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
 
               <button
