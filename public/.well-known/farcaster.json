@@ -15,7 +15,8 @@
     "description": "Daily Sudoku puzzles seeded from the Base blockchain. Track your daily and random clear counts.",
     "screenshotUrls": [
       "https://chain-sudoku-8fvfw54mu-kedamamesans-projects.vercel.app/screenshot1.png",
-      "https://chain-sudoku-8fvfw54mu-kedamamesans-projects.vercel.app/screenshot2.png"
+      "https://chain-sudoku-8fvfw54mu-kedamamesans-projects.vercel.app/screenshot2.png",
+      "https://chain-sudoku-8fvfw54mu-kedamamesans-projects.vercel.app/screenshot3.png"
     ],
     "primaryCategory": "games",
     "tags": ["sudoku", "puzzle", "daily", "base", "game"],
