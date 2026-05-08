@@ -25,9 +25,10 @@ export function useOnChainClears() {
   });
 
   const {
-    sendTransaction,
+    sendTransactionAsync,
     data: txHash,
     isPending: isSending,
+    error: txError,
     reset,
   } = useSendTransaction();
 
@@ -41,17 +42,17 @@ export function useOnChainClears() {
 
   const increment = async (type: 'daily' | 'random') => {
     if (!isConnected || !IS_CONTRACT_DEPLOYED) return;
-    if (chain?.id !== base.id) {
-      try {
+    try {
+      if (chain?.id !== base.id) {
         await switchChainAsync({ chainId: base.id });
-      } catch {
-        return;
       }
+      const data = encodeIncrement(
+        type === 'daily' ? 'incrementDaily' : 'incrementRandom',
+      );
+      await sendTransactionAsync({ to: CONTRACT_ADDRESS, data });
+    } catch {
+      // user rejected or network error — txError state will reflect this
     }
-    const data = encodeIncrement(
-      type === 'daily' ? 'incrementDaily' : 'incrementRandom',
-    );
-    sendTransaction({ to: CONTRACT_ADDRESS, data });
   };
 
   return {
@@ -62,6 +63,7 @@ export function useOnChainClears() {
     isConfirming,
     isSuccess,
     txHash,
+    txError,
     reset,
     isConnected,
     isContractDeployed: IS_CONTRACT_DEPLOYED,

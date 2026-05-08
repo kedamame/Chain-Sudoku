@@ -56,6 +56,7 @@ export default function GameScreen() {
   const [localRandomClears, setLocalRandomClears] = useState(0);
   const [clearedThisRound, setClearedThisRound] = useState(false);
   const [savedOnChain, setSavedOnChain] = useState(false);
+  const [pendingRetry, setPendingRetry] = useState(false);
 
   // Wallet
   const { address, isConnected } = useAccount();
@@ -110,6 +111,15 @@ export default function GameScreen() {
     if (onChain.isSuccess && !savedOnChain) setSavedOnChain(true);
   }, [onChain.isSuccess, savedOnChain]);
 
+  // After reset() clears txError, fire the retry increment
+  useEffect(() => {
+    if (pendingRetry && !onChain.txError) {
+      setPendingRetry(false);
+      onChain.increment(mode === 'daily' ? 'daily' : 'random');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingRetry, onChain.txError]);
+
   const startDaily = useCallback(() => {
     setClearedThisRound(false);
     setSavedOnChain(false);
@@ -156,6 +166,8 @@ export default function GameScreen() {
     : savedOnChain
     ? 'Saved on Base ✓'
     : null;
+
+  const txFailed = !!onChain.txError;
 
   // ── Home screen ──────────────────────────────────────────────
   if (mode === 'home') {
@@ -327,12 +339,27 @@ export default function GameScreen() {
                     </button>
                   )}
                   {isConnected && !savedOnChain && !onChain.isSending && !onChain.isConfirming && (
-                    <button
-                      onClick={() => onChain.increment(mode === 'daily' ? 'daily' : 'random')}
-                      className="w-full py-3 border-2 border-black text-sm font-bold tracking-widest uppercase hover:bg-black hover:text-white transition-colors"
-                    >
-                      Save to Blockchain
-                    </button>
+                    <>
+                      <button
+                        disabled={pendingRetry}
+                        onClick={() => {
+                          if (txFailed) {
+                            onChain.reset();
+                            setPendingRetry(true);
+                          } else {
+                            onChain.increment(mode === 'daily' ? 'daily' : 'random');
+                          }
+                        }}
+                        className="w-full py-3 border-2 border-black text-sm font-bold tracking-widest uppercase hover:bg-black hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {txFailed ? 'Retry Save' : 'Save to Blockchain'}
+                      </button>
+                      {txFailed && (
+                        <p className="text-[10px] tracking-widest uppercase text-red-500 text-center">
+                          Transaction rejected. Tap to retry.
+                        </p>
+                      )}
+                    </>
                   )}
                   {isConnected && (onChain.isSending || onChain.isConfirming || savedOnChain) && (
                     <div className="border border-gray-200 px-4 py-2 flex items-center justify-between">
