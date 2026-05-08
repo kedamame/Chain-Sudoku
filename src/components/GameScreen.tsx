@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import SudokuBoard from './SudokuBoard';
 import NumberPad from './NumberPad';
 import { useGame } from '@/hooks/useGame';
+import { useOnChainClears } from '@/hooks/useOnChainClears';
 import type { Difficulty } from '@/lib/sudoku';
 import { dailySeed } from '@/lib/sudoku';
 import {
@@ -22,6 +24,10 @@ function formatTime(s: number): string {
   const m = Math.floor(s / 60);
   const sec = s % 60;
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+function shortAddress(addr: string) {
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 }
 
 async function fetchBlockHash(): Promise<string> {
@@ -46,20 +52,35 @@ export default function GameScreen() {
   const [randomSeed, setRandomSeed] = useState<number>(Math.floor(Math.random() * 0xffffffff));
   const [randomDifficulty, setRandomDifficulty] = useState<Difficulty>('medium');
   const [dailyCompleted, setDailyCompleted] = useState(false);
-  const [dailyClears, setDailyClears] = useState(0);
-  const [randomClears, setRandomClears] = useState(0);
+  const [localDailyClears, setLocalDailyClears] = useState(0);
+  const [localRandomClears, setLocalRandomClears] = useState(0);
   const [clearedThisRound, setClearedThisRound] = useState(false);
+  const [savedOnChain, setSavedOnChain] = useState(false);
+
+  // Wallet
+  const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
+
+  // On-chain clears
+  const onChain = useOnChainClears();
+
+  // Display counts: on-chain if connected + deployed, else localStorage
+  const dailyClears = (isConnected && onChain.isContractDeployed && onChain.onChainDaily !== null)
+    ? onChain.onChainDaily
+    : localDailyClears;
+  const randomClears = (isConnected && onChain.isContractDeployed && onChain.onChainRandom !== null)
+    ? onChain.onChainRandom
+    : localRandomClears;
 
   useEffect(() => {
     setDailyCompleted(isDailyCompleted());
-    setDailyClears(getDailyClears());
-    setRandomClears(getRandomClears());
+    setLocalDailyClears(getDailyClears());
+    setLocalRandomClears(getRandomClears());
   }, []);
 
   useEffect(() => {
-    fetchBlockHash().then((hash) => {
-      setDailySeedVal(dailySeed(hash));
-    });
+    fetchBlockHash().then((hash) => setDailySeedVal(dailySeed(hash)));
   }, []);
 
   const game = useGame(
@@ -67,25 +88,37 @@ export default function GameScreen() {
     mode === 'daily' ? 'medium' : randomDifficulty,
   );
 
-  // Handle win/loss
+  // Handle win — update localStorage and trigger on-chain save
   useEffect(() => {
     if (game.status === 'won' && !clearedThisRound) {
       setClearedThisRound(true);
+      setSavedOnChain(false);
       if (mode === 'daily' && !isDailyCompleted()) {
         const n = incrementDailyClears();
-        setDailyClears(n);
+        setLocalDailyClears(n);
         setDailyCompleted(true);
+        if (isConnected && onChain.isContractDeployed) onChain.increment('daily');
       } else if (mode === 'random') {
         const n = incrementRandomClears();
-        setRandomClears(n);
+        setLocalRandomClears(n);
+        if (isConnected && onChain.isContractDeployed) onChain.increment('random');
       }
     }
-  }, [game.status, clearedThisRound, mode]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game.status, clearedThisRound, mode, isConnected]);
+
+  // Mark saved after tx confirmed
+  useEffect(() => {
+    if (onChain.isSuccess && !savedOnChain) setSavedOnChain(true);
+  }, [onChain.isSuccess, savedOnChain]);
 
   const startDaily = useCallback(() => {
     setClearedThisRound(false);
+    setSavedOnChain(false);
+    onChain.reset();
     setMode('daily');
     game.reset(dailySeedVal, 'medium');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dailySeedVal, game]);
 
   const startRandom = useCallback((diff: Difficulty) => {
@@ -93,17 +126,19 @@ export default function GameScreen() {
     setRandomSeed(seed);
     setRandomDifficulty(diff);
     setClearedThisRound(false);
+    setSavedOnChain(false);
+    onChain.reset();
     setMode('random');
     game.reset(seed, diff);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game]);
 
   const handleShare = useCallback(async () => {
-    const dc = getDailyClears();
-    const rc = getRandomClears();
+    const dc = dailyClears;
+    const rc = randomClears;
     const timeStr = formatTime(game.elapsed);
     const diffLabel = game.difficulty === 'easy' ? 'Easy' : game.difficulty === 'medium' ? 'Medium' : 'Hard';
     const modeLabel = mode === 'daily' ? 'Daily' : 'Random';
-
     const text = [
       `Chain Sudoku - ${modeLabel} (${diffLabel})`,
       `Time: ${timeStr} | Mistakes: ${game.mistakeCount}/3`,
@@ -111,17 +146,41 @@ export default function GameScreen() {
       `Daily clears: ${dc}`,
       `Random clears: ${rc}`,
     ].join('\n');
-
     const ogUrl = `${APP_URL}/og?dc=${dc}&rc=${rc}&time=${timeStr}&diff=${diffLabel}&mode=${modeLabel}`;
     await composeCast(text, [ogUrl]);
-  }, [game.elapsed, game.mistakeCount, game.difficulty, mode]);
+  }, [dailyClears, randomClears, game.elapsed, game.mistakeCount, game.difficulty, mode]);
 
-  // Home screen
+  // On-chain tx status label
+  const txStatus = onChain.isSending
+    ? 'Confirm in wallet...'
+    : onChain.isConfirming
+    ? 'Saving to Base...'
+    : savedOnChain
+    ? 'Saved on Base ✓'
+    : null;
+
+  // ── Home screen ──────────────────────────────────────────────
   if (mode === 'home') {
     return (
       <div className="min-h-screen bg-white flex flex-col">
-        <header className="border-b-2 border-black px-6 py-4">
+        <header className="border-b-2 border-black px-6 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-black tracking-widest uppercase">Chain Sudoku</h1>
+          {/* Wallet */}
+          {isConnected && address ? (
+            <button
+              onClick={() => disconnect()}
+              className="text-[10px] tracking-widest uppercase border border-black px-2 py-1 hover:bg-black hover:text-white transition-colors"
+            >
+              {shortAddress(address)}
+            </button>
+          ) : (
+            <button
+              onClick={() => connect({ connector: connectors[0] })}
+              className="text-[10px] tracking-widest uppercase border-2 border-black px-2 py-1 font-bold hover:bg-black hover:text-white transition-colors"
+            >
+              Connect
+            </button>
+          )}
         </header>
 
         <div className="flex-1 px-6 py-8 flex flex-col gap-6">
@@ -130,10 +189,16 @@ export default function GameScreen() {
             <div className="border-r-2 border-black p-4">
               <p className="text-xs tracking-widest uppercase text-gray-400">Daily Clears</p>
               <p className="text-4xl font-black mt-1">{dailyClears}</p>
+              {isConnected && onChain.isContractDeployed && (
+                <p className="text-[9px] text-gray-300 uppercase tracking-widest mt-1">On-chain</p>
+              )}
             </div>
             <div className="p-4">
               <p className="text-xs tracking-widest uppercase text-gray-400">Random Clears</p>
               <p className="text-4xl font-black mt-1">{randomClears}</p>
+              {isConnected && onChain.isContractDeployed && (
+                <p className="text-[9px] text-gray-300 uppercase tracking-widest mt-1">On-chain</p>
+              )}
             </div>
           </div>
 
@@ -148,8 +213,8 @@ export default function GameScreen() {
             <div className="p-4">
               <p className="text-sm text-gray-500 mb-4">
                 {dailyCompleted
-                  ? 'Today\'s puzzle is done. Come back tomorrow!'
-                  : 'Today\'s puzzle — same for everyone on Base.'}
+                  ? "Today's puzzle is done. Come back tomorrow!"
+                  : "Today's puzzle — same for everyone on Base."}
               </p>
               <button
                 onClick={startDaily}
@@ -188,7 +253,7 @@ export default function GameScreen() {
     );
   }
 
-  // Game screen
+  // ── Game screen ───────────────────────────────────────────────
   const diffLabel = game.difficulty === 'easy' ? 'Easy' : game.difficulty === 'medium' ? 'Medium' : 'Hard';
   const modeLabel = mode === 'daily' ? 'Daily' : 'Random';
 
@@ -251,6 +316,24 @@ export default function GameScreen() {
                   <p className="text-xl font-black">{randomClears}</p>
                 </div>
               </div>
+
+              {/* On-chain tx status */}
+              {isConnected && onChain.isContractDeployed && txStatus && (
+                <div className="border border-gray-200 px-4 py-2">
+                  <p className="text-[10px] tracking-widest uppercase text-gray-400">{txStatus}</p>
+                  {onChain.txHash && savedOnChain && (
+                    <a
+                      href={`https://basescan.org/tx/${onChain.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] underline text-gray-500"
+                    >
+                      View on Basescan
+                    </a>
+                  )}
+                </div>
+              )}
+
               <button
                 onClick={handleShare}
                 className="w-full py-3 bg-black text-white text-sm font-bold tracking-widest uppercase border-2 border-black hover:bg-white hover:text-black transition-colors"
