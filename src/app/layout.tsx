@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AppProvider } from '@/components/providers/AppProvider';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://chain-sudoku.vercel.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://chain-sudoku-8fvfw54mu-kedamamesans-projects.vercel.app';
 
 const miniAppEmbed = {
   version: '1',

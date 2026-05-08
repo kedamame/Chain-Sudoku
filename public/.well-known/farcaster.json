@@ -1,0 +1,31 @@
+{
+  "accountAssociation": {
+    "header": "REPLACE_WITH_WARPCAST_MANIFEST_HEADER",
+    "payload": "REPLACE_WITH_WARPCAST_MANIFEST_PAYLOAD",
+    "signature": "REPLACE_WITH_WARPCAST_MANIFEST_SIGNATURE"
+  },
+  "miniapp": {
+    "version": "1",
+    "name": "Chain Sudoku",
+    "homeUrl": "https://chain-sudoku-8fvfw54mu-kedamamesans-projects.vercel.app",
+    "iconUrl": "https://chain-sudoku-8fvfw54mu-kedamamesans-projects.vercel.app/icon.png",
+    "splashImageUrl": "https://chain-sudoku-8fvfw54mu-kedamamesans-projects.vercel.app/splash.png",
+    "splashBackgroundColor": "#000000",
+    "subtitle": "Daily Sudoku on Base",
+    "description": "Daily Sudoku puzzles seeded from the Base blockchain. Track your daily and random clear counts.",
+    "screenshotUrls": [
+      "https://chain-sudoku-8fvfw54mu-kedamamesans-projects.vercel.app/screenshot1.png",
+      "https://chain-sudoku-8fvfw54mu-kedamamesans-projects.vercel.app/screenshot2.png"
+    ],
+    "primaryCategory": "games",
+    "tags": ["sudoku", "puzzle", "daily", "base", "game"],
+    "heroImageUrl": "https://chain-sudoku-8fvfw54mu-kedamamesans-projects.vercel.app/og-image.png",
+    "tagline": "Daily puzzles on Base",
+    "ogTitle": "Chain Sudoku",
+    "ogDescription": "Daily Sudoku puzzles seeded from Base blockchain",
+    "ogImageUrl": "https://chain-sudoku-8fvfw54mu-kedamamesans-projects.vercel.app/og-image.png",
+    "requiredChains": ["eip155:8453"],
+    "requiredCapabilities": [],
+    "noindex": false
+  }
+}
