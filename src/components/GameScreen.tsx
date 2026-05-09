@@ -149,7 +149,7 @@ export default function GameScreen() {
     const modeLabel = mode === 'daily' ? 'Daily' : 'Random';
     const text = [
       `Chain Sudoku - ${modeLabel} (${diffLabel})`,
-      `Time: ${timeStr} | Mistakes: ${game.mistakeCount}/3`,
+      `Time: ${timeStr} | Mistakes: ${game.mistakeCount}`,
       ``,
       `Daily clears: ${dc}`,
       `Random clears: ${rc}`,
@@ -282,9 +282,11 @@ export default function GameScreen() {
         </div>
         <div className="text-right">
           <p className="text-xs font-mono font-bold">{formatTime(game.elapsed)}</p>
-          <p className="text-[10px] text-gray-400">
-            {'●'.repeat(game.mistakeCount)}{'○'.repeat(3 - game.mistakeCount)}
-          </p>
+          {game.mistakeCount > 0 && (
+            <p className="text-[10px] text-gray-400">
+              {game.mistakeCount} mistake{game.mistakeCount !== 1 ? 's' : ''}
+            </p>
+          )}
         </div>
       </header>
 
@@ -315,7 +317,7 @@ export default function GameScreen() {
                 </div>
                 <div>
                   <p className="text-[10px] tracking-widest uppercase text-gray-400">Mistakes</p>
-                  <p className="text-xl font-black">{game.mistakeCount} / 3</p>
+                  <p className="text-xl font-black">{game.mistakeCount}</p>
                 </div>
                 <div>
                   <p className="text-[10px] tracking-widest uppercase text-gray-400">Daily Clears</p>
@@ -403,30 +405,6 @@ export default function GameScreen() {
           </div>
         )}
 
-        {game.status === 'lost' && (
-          <div className="w-full max-w-sm border-2 border-black">
-            <div className="border-b-2 border-black px-6 py-4">
-              <h2 className="text-2xl font-black tracking-widest uppercase">Game Over</h2>
-            </div>
-            <div className="px-6 py-4 flex flex-col gap-3">
-              <p className="text-sm text-gray-500">3 mistakes reached.</p>
-              {mode === 'random' && (
-                <button
-                  onClick={() => startRandom(game.difficulty)}
-                  className="w-full py-3 bg-black text-white text-sm font-bold tracking-widest uppercase border-2 border-black hover:bg-white hover:text-black transition-colors"
-                >
-                  Try Again
-                </button>
-              )}
-              <button
-                onClick={() => setMode('home')}
-                className="w-full py-3 border-2 border-black text-sm font-bold tracking-widest uppercase hover:bg-black hover:text-white transition-colors"
-              >
-                Home
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

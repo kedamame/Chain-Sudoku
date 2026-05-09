@@ -4,9 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Board, Difficulty } from '@/lib/sudoku';
 import { generatePuzzle, isBoardComplete } from '@/lib/sudoku';
 
-const MAX_MISTAKES = 3;
-
-export type GameStatus = 'playing' | 'won' | 'lost';
+export type GameStatus = 'playing' | 'won';
 
 interface GameState {
   puzzle: Board;
@@ -88,12 +86,7 @@ export function useGame(seed: number, difficulty: Difficulty) {
         mistakeCount = s.mistakeCount + 1;
       }
 
-      const status: GameStatus =
-        mistakeCount >= MAX_MISTAKES
-          ? 'lost'
-          : isBoardComplete(board, s.solution)
-          ? 'won'
-          : 'playing';
+      const status: GameStatus = isBoardComplete(board, s.solution) ? 'won' : 'playing';
 
       return {
         ...s,
