@@ -17,6 +17,7 @@ interface GameState {
   elapsed: number;
   difficulty: Difficulty;
   numCounts: number[];
+  gameKey: number;
 }
 
 function computeCounts(board: Board): number[] {
@@ -44,6 +45,7 @@ export function useGame(seed: number, difficulty: Difficulty) {
       elapsed: 0,
       difficulty,
       numCounts: computeCounts(board),
+      gameKey: 0,
     };
   });
 
@@ -63,7 +65,7 @@ export function useGame(seed: number, difficulty: Difficulty) {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.status]);
+  }, [state.status, state.gameKey]);
 
   const select = useCallback((row: number, col: number) => {
     setState((s) => ({ ...s, selected: [row, col] }));
@@ -104,7 +106,7 @@ export function useGame(seed: number, difficulty: Difficulty) {
     const { puzzle, solution } = generatePuzzle(newSeed, newDifficulty);
     const board = puzzle.map((r) => [...r]);
     startedAt.current = Date.now();
-    setState({
+    setState((s) => ({
       puzzle,
       board,
       solution,
@@ -115,7 +117,8 @@ export function useGame(seed: number, difficulty: Difficulty) {
       elapsed: 0,
       difficulty: newDifficulty,
       numCounts: computeCounts(board),
-    });
+      gameKey: s.gameKey + 1,
+    }));
   }, []);
 
   return { ...state, select, input, reset };
