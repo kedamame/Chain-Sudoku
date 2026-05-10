@@ -15,7 +15,7 @@ import {
   incrementRandomClears,
   isDailyCompleted,
 } from '@/lib/storage';
-import { composeCast } from '@/lib/farcaster';
+import { composeCast, useFarcasterMiniApp } from '@/lib/farcaster';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://chain-sudoku.vercel.app';
 const BASE_RPC = 'https://mainnet.base.org';
@@ -57,6 +57,9 @@ export default function GameScreen() {
   const [clearedThisRound, setClearedThisRound] = useState(false);
   const [savedOnChain, setSavedOnChain] = useState(false);
   const [pendingRetry, setPendingRetry] = useState(false);
+
+  // Initialize Farcaster SDK (calls sdk.actions.ready() to dismiss splash screen)
+  useFarcasterMiniApp();
 
   // Wallet
   const { address, isConnected } = useAccount();

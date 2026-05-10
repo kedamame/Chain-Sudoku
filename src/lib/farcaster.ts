@@ -31,13 +31,14 @@ export function useFarcasterMiniApp(): FarcasterState {
 
     import('@farcaster/miniapp-sdk')
       .then(async ({ sdk }) => {
+        // Call ready() immediately so the splash screen dismisses
+        sdk.actions.ready();
+
         const isMiniApp = await sdk.isInMiniApp();
         if (!isMiniApp) {
           setState({ isInMiniApp: false, isLoading: false, user: null, sdk: null });
           return;
         }
-
-        sdk.actions.ready();
 
         try {
           const ethProvider = await sdk.wallet.getEthereumProvider();
