@@ -7,14 +7,14 @@ interface Props {
 
 export default function NumberPad({ onInput, counts }: Props) {
   return (
-    <div className="flex gap-2 mt-4">
+    <div className="flex gap-1 w-full mt-4">
       {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
         <button
           key={n}
           onClick={() => onInput(n)}
           disabled={counts[n] >= 9}
           className={[
-            'w-9 h-10 border-2 border-black text-sm font-bold',
+            'flex-1 h-10 border-2 border-black text-sm font-bold',
             'flex flex-col items-center justify-center leading-none',
             counts[n] >= 9
               ? 'bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed'
@@ -29,7 +29,7 @@ export default function NumberPad({ onInput, counts }: Props) {
       ))}
       <button
         onClick={() => onInput(null)}
-        className="w-9 h-10 border-2 border-black text-xs font-bold bg-white hover:bg-black hover:text-white transition-colors"
+        className="flex-1 h-10 border-2 border-black text-xs font-bold bg-white hover:bg-black hover:text-white transition-colors"
       >
         ✕
       </button>
